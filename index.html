@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speedy Trial Dates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+<style>
+/* Layout: one narrow column. A start-date control on top, three expiration rows below. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --fg: #17202a;
+  --muted: #566370;
+  --line: #d3d9df;
+  --accent: #b83c0a;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171c;
+    --surface: #1b2229;
+    --fg: #e8edf1;
+    --muted: #9aa7b3;
+    --line: #2d3741;
+    --accent: #ff9d66;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171c;
+  --surface: #1b2229;
+  --fg: #e8edf1;
+  --muted: #9aa7b3;
+  --line: #2d3741;
+  --accent: #ff9d66;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body),serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  padding-block: 2.5rem 3rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.shell { max-width: 42rem; margin-inline: auto; }
+
+.eyebrow {
+  font-family: var(--font-mono),serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+h1 {
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.5rem;
+  text-wrap: balance;
+}
+.lede { color: var(--muted); max-width: 40ch; margin: 0 0 2rem; }
+
+.picker {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.picker label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+.picker .form-control,
+.picker .btn { font-family: var(--font-body),serif; }
+.picker .form-control {
+  background-color: var(--bg);
+  color: var(--fg);
+  border-color: var(--line);
+  font-family: var(--font-mono),serif;
+  min-width: 0;
+}
+.picker .form-control:focus {
+  background-color: var(--bg);
+  color: var(--fg);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.btn-today {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.btn-today:hover { background: var(--bg); color: var(--fg); border-color: var(--muted); }
+.btn-today:focus-visible,
+.btn-copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.trials { display: flex; flex-direction: column; gap: 0.75rem; padding: 0; margin: 0; list-style: none; }
+.trial {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+.trial-days {
+  flex: 0 0 4.5rem;
+  font-family: var(--font-mono),serif;
+  line-height: 1.1;
+}
+.trial-days strong { display: block; font-size: 2rem; font-weight: 500; color: var(--accent); }
+.trial-days span { font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.trial-date { flex: 1 1 12rem; min-width: 0; }
+.trial-date .long { font-size: 1.25rem; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.trial-date .meta { font-family: var(--font-mono),serif; font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.weekend {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  font-family: var(--font-body),serif;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.btn-copy {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--line);
+  font-size: 0.875rem;
+  min-width: 5.5rem;
+}
+.btn-copy:hover { background: var(--bg); color: var(--fg); border-color: var(--muted); }
+
+.note { color: var(--muted); font-size: 0.875rem; margin: 1.5rem 0 0; max-width: 56ch; }
+.empty { color: var(--muted); padding: 1rem 0; }
+</style>
+
+</head>
+<body>
+<main class="shell">
+  <p class="eyebrow">Checking on...</p>
+  <h1>Speedy Trial Expiration Dates</h1>
+  <p class="lede">Pick the day the speedy trial starts. The 30, 60 and 90 day expiration dates change when you change the default date.</p>
+
+  <section class="picker" aria-label="Start date">
+    <label for="startDate">Trial start date</label>
+    <div class="d-flex flex-wrap gap-2">
+      <input type="date" id="startDate" class="form-control form-control-lg flex-grow-1" style="flex-basis: 12rem;">
+      <button type="button" id="todayBtn" class="btn btn-lg btn-today">Reset to today</button>
+    </div>
+  </section>
+
+  <ol class="trials" id="results" aria-live="polite"></ol>
+
+  <p class="note">Each date counts calendar days from the start date, with the start date as day 0.
+    A start date of today means the 30-day trial expires 30 days from today.</p>
+</main>
+
+<script>
+(function () {
+  var OFFSETS = [90, 60, 30];
+  var input = document.getElementById('startDate');
+  var list = document.getElementById('results');
+  var todayBtn = document.getElementById('todayBtn');
+
+  var longFmt = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  var dayFmt = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function toISO(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+
+  function parse(value) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+    if (!m) return null;
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+
+  function render() {
+    var start = parse(input.value);
+    list.textContent = '';
+    if (!start) {
+      var p = document.createElement('li');
+      p.className = 'empty';
+      p.textContent = 'Enter a start date to see the speedy expiration dates.';
+      list.appendChild(p);
+      return;
+    }
+    OFFSETS.forEach(function (n) {
+      var d = addDays(start, n);
+      var dow = d.getDay();
+      var text = longFmt.format(d);
+
+      var li = document.createElement('li');
+      li.className = 'trial';
+
+      var days = document.createElement('div');
+      days.className = 'trial-days';
+      var strong = document.createElement('strong');
+      strong.textContent = n;
+      var unit = document.createElement('span');
+      unit.textContent = 'days';
+      days.appendChild(strong);
+      days.appendChild(unit);
+
+      var date = document.createElement('div');
+      date.className = 'trial-date';
+      var long = document.createElement('div');
+      long.className = 'long';
+      long.textContent = text;
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = dayFmt.format(d) + ' · ' + toISO(d);
+      if (dow === 0 || dow === 6) {
+        var w = document.createElement('span');
+        w.className = 'weekend';
+        w.textContent = 'Weekend';
+        meta.appendChild(w);
+      }
+      date.appendChild(long);
+      date.appendChild(meta);
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-copy';
+      btn.textContent = 'Copy';
+      btn.setAttribute('aria-label', 'Copy ' + n + ' day expiration date');
+      btn.addEventListener('click', function () { copy(text, btn); });
+
+      li.appendChild(days);
+      li.appendChild(date);
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+
+  function flash(btn, label) {
+    btn.textContent = label;
+    setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+  }
+
+  function copy(text, btn) {
+    var done = function () { flash(btn, 'Copied'); };
+    var fallback = function () {
+      var long = btn.parentNode.querySelector('.long');
+      try {
+        var r = document.createRange();
+        r.selectNodeContents(long);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      } catch (e) {}
+      flash(btn, 'Selected');
+    };
+    try {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } catch (e) {
+      fallback();
+    }
+  }
+
+  function setToday() {
+    input.value = toISO(new Date());
+    render();
+  }
+
+  input.addEventListener('input', render);
+  input.addEventListener('change', render);
+  todayBtn.addEventListener('click', setToday);
+
+  // Keep Bootstrap's own theme switch in step with the page theme.
+  var root = document.documentElement;
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  function syncTheme() {
+    var t = root.getAttribute('data-theme');
+    var dark = t ? t === 'dark' : mq.matches;
+    root.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
+  }
+  syncTheme();
+  new MutationObserver(syncTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  if (mq.addEventListener) mq.addEventListener('change', syncTheme);
+
+  setToday();
+})();
+</script>
+</body>
+</html>
